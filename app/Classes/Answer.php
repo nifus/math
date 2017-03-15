@@ -2,6 +2,7 @@
 namespace Classes;
 
 use App\Bus;
+use League\Flysystem\Exception;
 
 class Answer
 {
@@ -80,40 +81,96 @@ class Answer
         return $respect . ' @id' . $this->post->vk_user . ' (' . $this->user['first_name'] . ")\n\r\n\r";
     }
 
+    private function createManyParametersMsg(){
+        return 'Недостаточно данных для вычисления. Возможно Вам поможет хелп, как заставить бота решать ваши задачи - https://vk.com/page-36661139_53304819';
+    }
 
     private function createEmptyMsg(){
-        return 'Вычислений не найдено. Возможно Вам поможет хелп, как заставить бота решать ваши задачи - https://vk.com/page-36661139_53304819';
+        return 'Вычислений не найдено. Возможно Вам поможет хелп, как заставить бота решать ваши задачи - https://vk.com/pages?oid=-36661139&p=%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%20%D0%BF%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0%D0%BC';
     }
     private function createFailMsg(){
         return 'Вычисления неслучились.... админ об этом узнает и пнет Валеру, если он не прав. ';
     }
 
+    /**
+     * Проверяем, относится ли выраженеи к простейшим
+     */
+    private function detectSimpleExpression($expression){
+        $expression = str_replace('sqrt','',$expression);
+
+        if ( preg_match('#[a-z]{1,2}#is',$expression) ){
+            return false;
+        };
+        return true;
+    }
+
+    private function parseVariables($variables){
+        $result = [];
+        $variables = preg_replace('#\s#','',$variables);
+
+        preg_match_all('#([a-z]{1,3})=([^;\]]*)#i',$variables,$found);
+
+        $i=0;
+        foreach($found[1] as $var ){
+            $result[$var] = $found[2][$i];
+            $i++;
+        }
+        if (sizeof($result)==0){
+            return null;
+        }
+        return $result;
+    }
     private function createMsg($text)
     {
+        $text = str_replace(' ','',$text);
+        $text = str_replace('х','x',$text);
 
-        preg_match('#([0-9 .,+-/*=^a-z)(]{2,})#is',$text, $found);
+        preg_match('#([-0-9 .,+/*=^a-z:)(]{2,})#is',$text, $expression);
+        if ( preg_match('#\[(.*)\]#is',$text, $variables) ){
+            $variables = $this->parseVariables($variables[1]);
+        }
 
 
-        if (!$found){
+
+        if (!$expression){
             return $this->createEmptyMsg();
         }else{
-            preg_match('#[+-/*=^]|sqrt#is',$found[1], $found1);
+            preg_match('#[-+/*=^]|sqrt#is',$expression[1], $found1);
             if (!$found1){
                 return  $this->createEmptyMsg();
             }
         }
-        $value = trim($found[1]);
+        $value = trim($expression[1]);
+
+
         $value = preg_replace('#=$#','',$value);
         $value = str_replace(',','.',$value);
+        $value = str_replace(':','/',$value);
+       // $value = str_replace('•','×',$value);
+        $value = preg_replace('#([0-9.]{1,})([a-z]{1,2})#i','\1*\2',$value);
+        $value = preg_replace('#([0-9.]{1,})\(#i','\1*(',$value);
+
+        //var_dump($value);
+        try{
+            if ( $this->detectSimpleExpression($value) ){
+                $end = $this->createSimpleMath($value);
+            }else{
+                $end = $this->createEqMath($value, $variables);
+            }
+        }catch ( \Exception $e ){
+            if ( $e->getCode()==1){
+                return  $this->createManyParametersMsg();
+            }
+        }
+
 
         //preg_match('#[a-z]{1,2}#is',$value, $type);
-        $end = $this->createSimpleMath($value);
+
         //if (!$type){
-
-
-        if (false===$end){
-            $end = $this->createEqMath($value);
+        if ($this->debug==true){
+            var_dump($end);
         }
+
 
 
 
@@ -125,17 +182,34 @@ class Answer
 
     }
 
-    private function createEqMath($value){
+    private function createEqMath($value, $variables){
+        $request = '';
+        if ( sizeof($variables)>0 ){
+            foreach($variables as $key=>$v){
+                $request.=$key.':'.$v.'$';
+            }
+        }
 
         ob_start();
-        //passthru('maxima -r \'' . $value . ';\'');
          passthru('maxima -r \'f:' . $value . '$solve(f);\'');
         $result = ob_get_contents();
-        ob_end_clean(); //Use this instead of ob_flush()
+        ob_end_clean();
 
+        if ( preg_match('#\-{1,}#',$result) ){
+            ob_start();
+            passthru('maxima -r \'f:' . $value . '$float(solve(f));\'');
+            $result = ob_get_contents();
+        }
         //var_dump($result);
-        //$result =  `maxima -r '"$text"'` ;
+
+        if( preg_match('#Unknowns given#',$result) ){
+
+            throw new \Exception("",1);
+        }
         preg_match('#\(%o2\)\s+\[(.*)\]\s*(.*)\(%i3\)#iUs', $result, $end);
+
+
+
 
         if (!isset($end[1]) && !isset($end[2]) ){
             return false;
@@ -144,23 +218,43 @@ class Answer
         if ($variable[1]==' --'){
             return trim($variable[0]).'='.trim($end[2]);
         }
-        return trim($end[1]).' '.trim($end[2]);
+        $res  =trim($end[1]).' '.trim($end[2]);
+
+        return $res;
+    }
+
+
+    private function  parseAnswer($value){
+        if ( preg_match('#\(%o2\)\s+\[(.*)\]\s*(.*)\(%i3\)#iUs', $value, $found) ){
+            $variable = explode('=',$found[1]);
+            if ($variable[1]==' --'){
+                return trim($variable[0]).'='.trim($found[2]);
+            }
+            $res  =trim($found[1]).' '.trim($found[2]);
+
+            return $res;
+        }elseif( preg_match('#\(%o1\)(.*)\(%i2\)#iUs', $value, $found) ){
+            $found = trim($found[1]);
+            return preg_replace('#.0$#','',$found);
+        }
+
+        return false;
+
     }
 
     private function createSimpleMath($value){
-
+        
         ob_start();
         passthru('maxima -r \'' . $value . ';\'');
-        // passthru('maxima -r \'f:' . $value . '$ solve(f);\'');
         $result = ob_get_contents();
-        ob_end_clean(); //Use this instead of ob_flush()
-
-        //$result =  `maxima -r '"$text"'` ;
-        preg_match('#\(%o1\)(.*)\(%i2\)#iUs', $result, $end);
-        if (!$end){
-            return false;
+        ob_end_clean();
+        if ( preg_match('#\-{1,}#',$result) ){
+            ob_start();
+            passthru('maxima -r \'float(' . $value . ');\'');
+            $result = ob_get_contents();
         }
-        return trim($end[1]);
+
+        return $this->parseAnswer($result);
     }
 
 

@@ -12,7 +12,7 @@ class Post extends Model
 
 
     protected
-        $fillable = ['id', 'vk_user', 'updated_at', 'post', 'normalize', 'is_answered', 'type', 'created_at', 'post_id', 'count_results'],
+        $fillable = ['id', 'vk_user', 'updated_at', 'post', 'normalize', 'is_answered', 'type', 'created_at', 'post_id', 'count_results','use_for_test','test_result'],
         $table = 'posts';
 
     public
@@ -64,6 +64,10 @@ class Post extends Model
 
     static function getByVkId($id){
         return self::where('post_id',$id)->first();
+    }
+
+    static function getTests(){
+        return self::where('use_for_test',1)->get();
     }
 
 }
