@@ -29,17 +29,20 @@ class ExampleTest extends TestCase
             'проверкаsqrt(9) проверка'=>'3',
             '3^3'=>'27',
             '2^3+26'=>'34',
-            ' (x+2,3)*0,2=0,7 проверка'=>'1.2',
+            '(x+2,3)*0,2=0,7 проверка'=>'1.2',
             '4,2x+8,4=14,7'=>'1.5',
             '(m-0,67)*0,02=0,0152'=>'1.43',
             '6(2x-3)+ 2(4-3x)=5'=>'2.5',
             'abs(x)+abs(-12)=abs(-22)'=>'10',
             '10x=100+10x-x'=>'100',
+            '400-4х+6'=>'vk.com',
 
         ];
         foreach($tests as $key=>$value){
+            echo $key;
             $response = $this->post('/api/check',['text'=>$key]);
             $response->assertStatus(200)->assertSee($value);
+
         }
 
 
