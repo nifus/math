@@ -38,7 +38,11 @@ class ExampleTest extends TestCase
             '400-4х+6'=>'vk.com',
             //'400-4х+6'=>'vk.com',
                 //  квадратные
-            'x(x-30)'=>'x = 0'
+            'x(x-30)'=>'x = 0',
+            'x(x+2)'=>'x = 0',
+            '2x-1/x+2'=>'x = 0.36',
+            '(x-y)^2'=>'http',
+            '8a+122 [a=1.5]'=>'134',
 
         ];
         foreach($tests as $key=>$value){

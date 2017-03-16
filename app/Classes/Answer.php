@@ -56,7 +56,7 @@ class Answer
         //$text = str_replace('х','x',$text);
         //$text = str_replace('а','a',$text);
         $text = str_replace('×', '*', $text);
-
+        $text = str_replace(':', '/', $text);
         $text = $this->removeText($text);
         var_dump('На входе текст:' . $text);
         if (preg_match('#[а-я]#i', $text)) {
@@ -84,7 +84,7 @@ class Answer
 
         $value = preg_replace('#=$#', '', $value);
         $value = str_replace(',', '.', $value);
-        $value = str_replace(':', '/', $value);
+
         // $value = str_replace('•','×',$value);
         $value = preg_replace('#([0-9.]{1,})([a-z]{1,2})#i', '\1*\2', $value);
         $value = preg_replace('#([0-9.a-z]{1,})\(#i', '\1*(', $value);
@@ -218,12 +218,21 @@ class Answer
             }
         }
 
-        // var_dump($value);
+        var_dump($variables);
+        echo 'maxima -r \'' . $request . 'f:' . $value . '$solve(f);\'';
         ob_start();
-        passthru('maxima -r \'f:' . $value . '$solve(f);\'');
+        passthru('maxima -r \'' . $request . 'f:' . $value . '$solve(f);\'');
         $result = ob_get_contents();
         ob_end_clean();
 
+        if (preg_match('#variable list is empty, continuing anyway#i', $result)) {
+
+            ob_start();
+            passthru('maxima -r \'' . $request . '' . $value . ';\'');
+            $result = ob_get_contents();
+            ob_end_clean();
+            var_dump($result);
+        }
         if (preg_match('#\-{1,}#', $result)) {
             ob_start();
             passthru('maxima -r \'f:' . $value . '$float(solve(f));\'');
@@ -232,22 +241,13 @@ class Answer
         // var_dump($result);
 
         if (preg_match('#Unknowns given#', $result)) {
-
             throw new \Exception("", 1);
         }
-        preg_match('#\(%o2\)\s+\[(.*)\]\s*(.*)\(%i3\)#iUs', $result, $end);
+        return $this->parseAnswer($result);
+
+        //preg_match('#\(%o2\)\s+\[(.*)\]\s*(.*)\(%i3\)#iUs', $result, $end);
 
 
-        if (!isset($end[1]) && !isset($end[2])) {
-            return false;
-        }
-        $variable = explode('=', $end[1]);
-        if ($variable[1] == ' --') {
-            return trim($variable[0]) . '=' . trim($end[2]);
-        }
-        $res = trim($end[1]) . ' ' . trim($end[2]);
-
-        return $res;
     }
 
     private function createSimpleMath($value)
@@ -261,13 +261,19 @@ class Answer
 
     private function parseAnswer($value)
     {
+
         if (preg_match('#\(%o2\)\s+\[(.*)\]\s*(.*)\(%i3\)#iUs', $value, $found)) {
+
             $variable = explode('=', $found[1]);
             if ($variable[1] == ' --') {
                 return trim($variable[0]) . '=' . trim($found[2]);
             }
             $res = trim($found[1]) . ' ' . trim($found[2]);
             return $res;
+        } elseif (preg_match('#\(%o2\)\s+(.*)\s*\(%i3\)#iUs', $value, $found)) {
+            $found = preg_replace('#\s+#', '', $found[1]);
+            // var_dump($found);
+            return preg_replace('#.0$#', '', $found);
         } elseif (preg_match('#\(%i1\)(.*)\(%i2\)#iUs', $value, $found)) {
             $found = preg_replace('#\s+#', '', $found[1]);
             // var_dump($found);
