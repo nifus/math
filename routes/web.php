@@ -114,3 +114,19 @@ Route::get('/check', function ( Request $request) {
     return response('<form><textarea style="height: 200px;width:400px" name="text"></textarea><button>Send</button></form>');
 });
 
+
+Route::post('/api/check/transform', function ( Request $request) {
+    $text = $request->get('text');
+    return response()->json(['answer'=>\Classes\Answer::transformText($text)]);
+});
+
+Route::get('/check/transform', function ( Request $request) {
+    $text = $request->get('text');
+
+    if ( $text ){
+        echo '<pre>';
+        echo Classes\Answer::transformText($text);
+        echo '</pre>';
+    }
+    return response('<form><textarea style="height: 200px;width:400px" name="text"></textarea><button>Send</button></form>');
+});

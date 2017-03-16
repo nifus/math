@@ -15,7 +15,7 @@ class ExampleTest extends TestCase
      *
      * @return void
      */
-    public function testBasicTest()
+    public function testBasic()
     {
         $tests = [
             '2+2'=>'4',
@@ -36,10 +36,13 @@ class ExampleTest extends TestCase
             'abs(x)+abs(-12)=abs(-22)'=>'10',
             '10x=100+10x-x'=>'100',
             '400-4х+6'=>'vk.com',
+            //'400-4х+6'=>'vk.com',
+                //  квадратные
+            'x(x-30)'=>'x = 0'
 
         ];
         foreach($tests as $key=>$value){
-            echo $key;
+            //echo $key;
             $response = $this->post('/api/check',['text'=>$key]);
             $response->assertStatus(200)->assertSee($value);
 
@@ -52,4 +55,21 @@ class ExampleTest extends TestCase
             $response->assertStatus(200)->assertSee($test->test_result);
         }
     }
+
+    /*public function testTransformText()
+    {
+        $tests = [
+            '2+2'=>'4',
+        ];
+
+        foreach($tests as $key=>$value){
+            //echo $key;
+            $response = $this->post('/api/check/transform',['text'=>$key]);
+            $response->assertStatus(200)->assertSee($value);
+
+        }
+
+
+
+    }*/
 }

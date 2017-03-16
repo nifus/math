@@ -87,7 +87,10 @@ class Answer
         $value = str_replace(':', '/', $value);
         // $value = str_replace('•','×',$value);
         $value = preg_replace('#([0-9.]{1,})([a-z]{1,2})#i', '\1*\2', $value);
-        $value = preg_replace('#([0-9.]{1,})\(#i', '\1*(', $value);
+        $value = preg_replace('#([0-9.a-z]{1,})\(#i', '\1*(', $value);
+
+        $value = str_replace('sqrt*(', 'sqrt(', $value);
+        $value = str_replace('abs*(', 'abs(', $value);
         $end = false;
         //var_dump($value);
         try {
