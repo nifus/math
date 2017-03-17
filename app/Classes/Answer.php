@@ -52,7 +52,8 @@ class Answer
 
     private function createMsg($text)
     {
-        $text = str_replace(' ', '', $text);
+
+        //$text = str_replace(' ', '', $text);
         //$text = str_replace('х','x',$text);
         //$text = str_replace('а','a',$text);
         $text = str_replace('×', '*', $text);
@@ -62,45 +63,60 @@ class Answer
         if (preg_match('#[а-я]#i', $text)) {
             return $this->createCyrillicMsg();
         }
-        preg_match('#([-0-9 .,+/*=^a-z:)(]{2,})#is', $text, $expression);
+        $vars = [];
         if (preg_match('#\[(.*)\]#is', $text, $variables)) {
-            $variables = $this->parseVariables($variables[1]);
+            $vars = $this->parseVariables($variables[1]);
+            $text = str_replace('['.$variables[1].']','',$text);
         }
 
+        preg_match_all('#([-0-9 .,+/*=^a-z:)(]{2,})#is', $text, $founds);
 
-        if (!$expression) {
+
+
+
+        $expressions = [];
+        if (sizeof($founds[0])==0) {
             return $this->createEmptyMsg();
+        }elseif (sizeof($founds[0]) > 1) {
+
+            foreach ($founds[0] as $found) {
+                $exp = $this->normalize($found);
+                if ( false!==$exp ){
+                    array_push($expressions, $exp);
+                }
+            }
+            var_dump('На входе выражения:' );
+            var_dump($expressions);
+            if ( sizeof($expressions) ==0 ){
+                return $this->createEmptyMsg();
+            }
+
+        }elseif(sizeof($founds[0]) ==1 ){
+            $expression = $this->normalize($founds[0][0]);
+            if ( false===$expression ){
+                return $this->createEmptyMsg();
+            }
+            array_push($expressions, $expression);
+
+            var_dump('На входе выражение:' . $expressions[0]);
         }
 
-        var_dump('На входе выражение:' . $expression[1]);
 
-        preg_match('#[-+/*=^]|sqrt|abs#is', $expression[1], $found1);
-        if (!$found1) {
-            return $this->createEmptyMsg();
-        }
-
-        $value = trim($expression[1]);
-
-
-        $value = preg_replace('#=$#', '', $value);
-        $value = str_replace(',', '.', $value);
-
-        // $value = str_replace('•','×',$value);
-        $value = preg_replace('#([0-9.]{1,})([a-z]{1,2})#i', '\1*\2', $value);
-        $value = preg_replace('#([0-9.a-z]{1,})\(#i', '\1*(', $value);
-
-        $value = str_replace('sqrt*(', 'sqrt(', $value);
-        $value = str_replace('abs*(', 'abs(', $value);
         $end = false;
         //var_dump($value);
         try {
-            if ($this->detectSimpleExpression($value)) {
-                var_dump('detect simple expr');
-                $end = $this->createSimpleMath($value);
-            } else {
-                var_dump('detect eq expr');
-                $end = $this->createEqMath($value, $variables);
+            if (sizeof($expressions)==1){
+                if ($this->detectSimpleExpression($expressions[0])) {
+                    var_dump('detect simple expr');
+                    $end = $this->createSimpleMath($expressions[0]);
+                } else {
+                    var_dump('detect eq expr');
+                    $end = $this->createEqMath($expressions[0], $vars);
+                }
+            }else{
+                $end = $this->createEqSystemMath($expressions);
             }
+
         } catch (\Exception $e) {
             //var_dump($e->getMessage());
             if ($e->getCode() == 1) {
@@ -174,6 +190,24 @@ class Answer
         return 'В запросе найдена кириллица. Возможно Вам поможет хелп, как заставить бота решать ваши задачи - https://vk.com/pages?oid=-36661139&p=%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%20%D0%BF%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0%D0%BC';
     }
 
+    private function normalize($expression)
+    {
+        //preg_match('#[-+/*=^]|sqrt|abs#is', $expression, $found1);
+        //$value = trim($expression);
+
+        $expression = preg_replace('#=$#', '', $expression);
+        $expression = str_replace(',', '.', $expression);
+
+        // $value = str_replace('•','×',$value);
+        $expression = preg_replace('#([0-9.]{1,})([a-z]{1,2})#i', '\1*\2', $expression);
+        $expression = preg_replace('#([0-9.a-z]{1,})\(#i', '\1*(', $expression);
+        $expression = preg_replace('#\)([0-9.a-z]{1,})#i', ')*\1', $expression);
+
+        $expression = str_replace('sqrt*(', 'sqrt(', $expression);
+        $expression = str_replace('abs*(', 'abs(', $expression);
+        return $expression;
+    }
+
     /**
      * Проверяем, относится ли выраженеи к простейшим
      */
@@ -209,9 +243,22 @@ class Answer
         return $result;
     }
 
+    private function createEqSystemMath($expressions){
+        $run = implode(',',$expressions);
+
+
+        echo 'maxima -r \'solve(['.$run.']);\'';
+        ob_start();
+        passthru('maxima -r \'solve(['.$run.']);\'');
+        $result = ob_get_contents();
+        ob_end_clean();
+        return $this->parseAnswer($result);
+
+    }
 
     private function createEqMath($value, $variables)
     {
+
         $request = '';
         if (sizeof($variables) > 0) {
             foreach ($variables as $key => $v) {
@@ -257,14 +304,15 @@ class Answer
         passthru('maxima -r \'printf(true,"~f",' . $value . ')$\'');
         $result = ob_get_contents();
         ob_end_clean();
+
         return $this->parseAnswer($result);
     }
 
     private function parseAnswer($value)
     {
-
-        if (preg_match('#\(%o2\)\s+\[(.*)\]\s*(.*)\(%i3\)#iUs', $value, $found)) {
-
+        if (preg_match('#\(%o1\)\s+\[(\[.*\])\]\s*\(%i2\)#iUs', $value, $found)) {
+            return $found[1];
+        }elseif (preg_match('#\(%o2\)\s+\[(.*)\]\s*(.*)\(%i3\)#iUs', $value, $found)) {
             $variable = explode('=', $found[1]);
             if ($variable[1] == ' --') {
                 return trim($variable[0]) . '=' . trim($found[2]);
@@ -287,7 +335,7 @@ class Answer
 
     private function removeText($text)
     {
-        $text = preg_replace('#\s+#', '', $text);
+        $text = preg_replace('# +#', '', $text);
         $text = preg_replace('#[а-я.,:!]{2,}#i', '', $text);
         $text = preg_replace('#^[a-zа-я]([0-9])#i', '\1', $text);
         return $text;
