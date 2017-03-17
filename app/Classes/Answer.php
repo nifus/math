@@ -74,7 +74,7 @@ class Answer
 
         var_dump('На входе выражение:' . $expression[1]);
 
-        preg_match('#[-+/*=^]|sqrt#is', $expression[1], $found1);
+        preg_match('#[-+/*=^]|sqrt|abs#is', $expression[1], $found1);
         if (!$found1) {
             return $this->createEmptyMsg();
         }
