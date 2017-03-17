@@ -45,8 +45,11 @@ class ExampleTest extends TestCase
             '8a+122 [a=1.5]'=>'134',
             'abs(-1)'=>'1',
             'abs(1)'=>'1',
+                //  системы
             '3*x-8*y=22
-7*x+8*y=78' =>'y = 1, x = 10'
+7*x+8*y=78' =>'y = 1, x = 10',
+            'x^2+xy=28,
+y^2+xy=-12'=>'y = 1, x = 10'
 
         ];
         foreach($tests as $key=>$value){

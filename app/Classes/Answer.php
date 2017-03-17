@@ -203,6 +203,20 @@ class Answer
         $expression = preg_replace('#([0-9.a-z]{1,})\(#i', '\1*(', $expression);
         $expression = preg_replace('#\)([0-9.a-z]{1,})#i', ')*\1', $expression);
 
+
+        if ( preg_match_all('#([a-z]{2,})#i',$expression, $found) ){
+            foreach($found[0] as $f ){
+                if ($f=='sqrt' || $f=='abs' ){
+                    continue;
+                }
+                $replace = [];
+                for($i=0;$i<strlen($f);$i++){
+                    array_push($replace, $f[$i]);
+                }
+                $expression = str_replace($f, implode('*',$replace), $expression);
+            }
+        }
+
         $expression = str_replace('sqrt*(', 'sqrt(', $expression);
         $expression = str_replace('abs*(', 'abs(', $expression);
         return $expression;
