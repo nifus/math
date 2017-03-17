@@ -43,6 +43,7 @@ class ExampleTest extends TestCase
             '2x-1/x+2'=>'x = 0.36',
             '(x-y)^2'=>'http',
             '8a+122 [a=1.5]'=>'134',
+            'abs(-1)'=>'1',
 
         ];
         foreach($tests as $key=>$value){

@@ -180,6 +180,7 @@ class Answer
     private function detectSimpleExpression($expression)
     {
         $expression = str_replace('sqrt', '', $expression);
+        $expression = str_replace('abs', '', $expression);
         //var_dump($expression);
         if (preg_match('#=.*#is', $expression)) {
             return false;
