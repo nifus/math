@@ -65,7 +65,7 @@ class Answer
         }
         if (preg_match('#[√²]#i', $text, $found)) {
            // dd($found);
-            return $this->createStupidMsg($found[0]);
+            return $this->createStupidMsg();
         }
         $vars = [];
         if (preg_match('#\[(.*)\]#is', $text, $variables)) {
@@ -196,7 +196,18 @@ class Answer
     private function createStupidMsg()
     {
 
-        return 'Ух, Я впечатлен! Вы не поленились найти UTF символы, но увы, они бесполезны для запроса. Как составить запрос правильно поможет хелп - https://vk.com/pages?oid=-36661139&p=%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%20%D0%BF%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0%D0%BC';
+        return 'Ух, Я впечатлен! Вы не поленились найти UTF символы, но увы, они бесполезны для запроса. Составить запрос правильно поможет хелп - https://vk.com/pages?oid=-36661139&p=%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%20%D0%BF%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0%D0%BC';
+    }
+
+    private function createIncorrectMsg()
+    {
+        $msgs = [
+            'Это не похоже на корректный запрос',
+            'Ух, я в замешательстве, как это можно посчитать',
+            'Это точно математика?',
+        ];
+
+        return $msgs[rand(0,2)].'. Составить запрос правильно поможет хелп - https://vk.com/pages?oid=-36661139&p=%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%20%D0%BF%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0%D0%BC';
     }
 
     private function normalize($expression)
@@ -327,12 +338,15 @@ class Answer
         passthru('maxima -r \'printf(true,"~f",' . $value . ')$\'');
         $result = ob_get_contents();
         ob_end_clean();
-
+       // dd($result);
         return $this->parseAnswer($result);
     }
 
     private function parseAnswer($value)
     {
+        if ( preg_match('#incorrect syntax#',$value) ){
+            return $this->createIncorrectMsg();
+        }
         if (preg_match('#\(%o1\)\s+\[(\[.*\])\]\s*\(%i2\)#iUs', $value, $found)) {
             return $found[1];
         }elseif (preg_match('#\(%o2\)\s+\[(.*)\]\s*(.*)\(%i3\)#iUs', $value, $found)) {
