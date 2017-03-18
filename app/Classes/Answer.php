@@ -63,7 +63,7 @@ class Answer
         if (preg_match('#[а-я]#i', $text)) {
             return $this->createCyrillicMsg();
         }
-        if (preg_match('#[√]#i', $text, $found)) {
+        if (preg_match('#[√²]#i', $text, $found)) {
            // dd($found);
             return $this->createStupidMsg($found[0]);
         }
@@ -193,10 +193,10 @@ class Answer
     {
         return 'В запросе найдена кириллица. Возможно Вам поможет хелп, как заставить бота решать ваши задачи - https://vk.com/pages?oid=-36661139&p=%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%20%D0%BF%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0%D0%BC';
     }
-    private function createStupidMsg($chars)
+    private function createStupidMsg()
     {
 
-        return 'Ух, Я впечатлен! Вы не поленились найти UTF символы вроде этого - '.$chars.'. Но увы, они бесполезны для запроса. Как составить запрос правильно поможет хелп - https://vk.com/pages?oid=-36661139&p=%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%20%D0%BF%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0%D0%BC';
+        return 'Ух, Я впечатлен! Вы не поленились найти UTF символы, но увы, они бесполезны для запроса. Как составить запрос правильно поможет хелп - https://vk.com/pages?oid=-36661139&p=%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%20%D0%BF%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0%D0%BC';
     }
 
     private function normalize($expression)
