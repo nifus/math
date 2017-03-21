@@ -34,9 +34,7 @@ class Answer
         $this->user = $user;
         $this->response = $this->createRespect();
         if (!is_null($post)) {
-            $this->response .= $this->createMsg($post->post);
-
-
+            $this->response .= $this->createMsg($post->post, $post->attachments);
         }
     }
 
@@ -50,90 +48,45 @@ class Answer
         return $this->response;
     }
 
-    private function createMsg($text)
+    private function createMsg($text, $attachments)
     {
-
-        //$text = str_replace(' ', '', $text);
-        //$text = str_replace('х','x',$text);
-        //$text = str_replace('а','a',$text);
-        $text = str_replace('×', '*', $text);
-        $text = str_replace(':', '/', $text);
-        $text = $this->removeText($text);
-        var_dump('На входе текст:' . $text);
-        if (preg_match('#[а-я]#i', $text)) {
+        if (!empty($attachments)){
+            return $this->createAttachmentMsg();
+        }
+        $parser =  new \MathParser($text, $this->debug);
+        if ( $parser->detect_cyrillic == true ){
             return $this->createCyrillicMsg();
         }
-        if (preg_match('#[√²]#i', $text, $found)) {
-           // dd($found);
+        if ( $parser->detect_utf == true ){
             return $this->createStupidMsg();
         }
-        $vars = [];
-        if (preg_match('#\[(.*)\]#is', $text, $variables)) {
-            $vars = $this->parseVariables($variables[1]);
-            $text = str_replace('['.$variables[1].']','',$text);
-        }
 
+        if ( $parser->detect_task == true ){
+            return $this->createTaskMsg();
+        }
         preg_match_all('#([-0-9 .,+/*=^a-z:)(]{2,})#is', $text, $founds);
 
-
-
-
-        $expressions = [];
-        if (sizeof($founds[0])==0) {
-            return $this->createEmptyMsg();
-        }elseif (sizeof($founds[0]) > 1) {
-
-            foreach ($founds[0] as $found) {
-                $exp = $this->normalize($found);
-                if ( false!==$exp ){
-                    array_push($expressions, $exp);
-                }
-            }
-            var_dump('На входе выражения:' );
-            var_dump($expressions);
-            if ( sizeof($expressions) ==0 ){
-                return $this->createEmptyMsg();
-            }
-
-        }elseif(sizeof($founds[0]) ==1 ){
-            $expression = $this->normalize($founds[0][0]);
-            if ( false===$expression ){
-                return $this->createEmptyMsg();
-            }
-            array_push($expressions, $expression);
-
-            var_dump('На входе выражение:' . $expressions[0]);
-        }
-
-
         $end = false;
-        //var_dump($value);
         try {
-            if (sizeof($expressions)==1){
-                if ($this->detectSimpleExpression($expressions[0])) {
-                    var_dump('detect simple expr');
-                    $end = $this->createSimpleMath($expressions[0]);
-                } else {
-                    var_dump('detect eq expr');
-                    $end = $this->createEqMath($expressions[0], $vars);
-                }
-            }else{
-                $end = $this->createEqSystemMath($expressions);
-            }
+            if ($parser->count_expressions==0) {
+                return $this->createEmptyMsg();
 
+            }elseif ($parser->count_expressions==1) {
+                if ($this->detectSimpleExpression($parser->expressions[0])) {
+                  //  var_dump('detect simple expr');
+                    $end = $this->createSimpleMath($parser->expressions[0]);
+                } else {
+                    //var_dump('detect eq expr');
+                    $end = $this->createEqMath($parser->expressions[0], $parser->variables);
+                }
+            }elseif($parser->count_expressions>1){
+                $end = $this->createEqSystemMath($parser->expressions);
+            }
         } catch (\Exception $e) {
-            //var_dump($e->getMessage());
+            var_dump($e->getMessage());
             if ($e->getCode() == 1) {
                 return $this->createManyParametersMsg();
             }
-        }
-
-
-        //preg_match('#[a-z]{1,2}#is',$value, $type);
-
-        //if (!$type){
-        if ($this->debug == true) {
-            //  var_dump($end);
         }
 
 
@@ -143,6 +96,14 @@ class Answer
         //var_dump($result);
         return $end;
 
+    }
+
+    private function createAttachmentMsg(){
+        return 'Ммм это похоже на картинку. К сожалению пока я не могу распознавать текст на картинках. Вам стоит обратиться к живым людям. ';
+    }
+
+    private function createTaskMsg(){
+        return 'Ух, это похоже на одну из тех задач, которые тут решают живые люди за денежку. Больше информации в хелпе https://vk.cc/6oV2be';
     }
 
     private function createRespect()
@@ -176,12 +137,12 @@ class Answer
 
     private function createManyParametersMsg()
     {
-        return 'Недостаточно данных для вычисления. Возможно Вам поможет хелп, как заставить бота решать ваши задачи - https://vk.com/page-36661139_53304819';
+        return 'Недостаточно данных для вычисления. Возможно Вам поможет хелп, как заставить бота решать ваши задачи - https://vk.cc/6oV2be';
     }
 
     private function createEmptyMsg()
     {
-        return 'Вычислений не найдено. Возможно Вам поможет хелп, как заставить бота решать ваши задачи - https://vk.com/pages?oid=-36661139&p=%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%20%D0%BF%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0%D0%BC';
+        return 'Вычислений не найдено. Возможно Вам поможет хелп, как заставить бота решать ваши задачи - https://vk.cc/6oV2be';
     }
 
     private function createFailMsg()
@@ -191,12 +152,12 @@ class Answer
 
     private function createCyrillicMsg()
     {
-        return 'В запросе найдена кириллица. Возможно Вам поможет хелп, как заставить бота решать ваши задачи - https://vk.com/pages?oid=-36661139&p=%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%20%D0%BF%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0%D0%BC';
+        return 'В запросе найдена кириллица. Возможно Вам поможет хелп, как заставить бота решать ваши задачи - https://vk.cc/6oV2be';
     }
     private function createStupidMsg()
     {
 
-        return 'Ух, Я впечатлен! Вы не поленились найти UTF символы, но увы, они бесполезны для запроса. Составить запрос правильно поможет хелп - https://vk.com/pages?oid=-36661139&p=%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%20%D0%BF%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0%D0%BC';
+        return 'Ух, Я впечатлен, это красиво, но мимо! Составить запрос правильно поможет хелп - https://vk.cc/6oV2be';
     }
 
     private function createIncorrectMsg()
@@ -207,7 +168,7 @@ class Answer
             'Это точно математика?',
         ];
 
-        return $msgs[rand(0,2)].'. Составить запрос правильно поможет хелп - https://vk.com/pages?oid=-36661139&p=%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%20%D0%BF%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0%D0%BC';
+        return $msgs[rand(0,2)].'. Составить запрос правильно поможет хелп - https://vk.cc/6oV2be';
     }
 
     private function normalize($expression)
@@ -384,7 +345,7 @@ class Answer
         $answer = new self();
         $answer->debug(true);
         // $normalize = self::normalize($text);
-        return $answer->createMsg($text);
+        return $answer->createMsg($text, null);
     }
 
 

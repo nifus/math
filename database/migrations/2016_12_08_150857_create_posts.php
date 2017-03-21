@@ -20,6 +20,7 @@ class CreatePosts extends Migration
             $table->integer('post_id')->nullable();
             $table->smallInteger('count_results')->default(0);
             $table->text('normalize')->nullable();
+            $table->text('attachments')->nullable();
             $table->enum('is_answered',['0','1'])->default('0');
             $table->enum('type',['wall','message','comment'])->default('wall');
             $table->timestamps();

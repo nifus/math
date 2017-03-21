@@ -12,7 +12,7 @@ class Post extends Model
 
 
     protected
-        $fillable = ['id', 'vk_user', 'updated_at', 'post', 'normalize', 'is_answered', 'type', 'created_at', 'post_id', 'count_results','use_for_test','test_result'],
+        $fillable = ['id', 'vk_user', 'updated_at', 'post', 'normalize', 'is_answered', 'type', 'created_at', 'post_id', 'count_results','use_for_test','test_result','attachments'],
         $table = 'posts';
 
     public

@@ -20,7 +20,7 @@ class ExampleTest extends TestCase
         $tests = [
             '2+2'=>'4',
             'проверка 2+2'=>'4',
-            'проверка'=>'vk.com',
+            'проверка'=>'vk.cc',
             '2,2*2'=>'4.4',
             '2.2*2'=>'4.4',
             '1/2'=>'0.5',
@@ -35,8 +35,8 @@ class ExampleTest extends TestCase
             '6(2x-3)+ 2(4-3x)=5'=>'2.5',
             'abs(x)+abs(-12)=abs(-22)'=>'10',
             '10x=100+10x-x'=>'100',
-            '400-4х+6'=>'vk.com',
-            //'400-4х+6'=>'vk.com',
+            '400-4х+6'=>'vk.cc',
+            //'400-4х+6'=>'vk.cc',
                 //  квадратные
             'x(x-30)'=>'x = 0',
             'x(x+2)'=>'x = 0',
@@ -49,7 +49,7 @@ class ExampleTest extends TestCase
             '3*x-8*y=22
 7*x+8*y=78' =>'y = 1, x = 10',
             'x^2+xy=28,
-y^2+xy=-12'=>'y = 1, x = 10'
+y^2+xy=-12'=>'y = 3, x = - 7'
 
         ];
         foreach($tests as $key=>$value){

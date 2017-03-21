@@ -65,6 +65,7 @@ Route::post('/group/callback', function ( Request $request) {
                 //  'normalize'=>$normalize,
                 'type'=>'wall',
                 'is_answered'=>'0',
+                'attachments'=>$data->object->attachments
             ]);
             Job::createAnswerWallPostJob($post->id);
             //dispatch(new CreateAnswer($post));
