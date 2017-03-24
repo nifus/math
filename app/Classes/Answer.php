@@ -64,23 +64,28 @@ class Answer
         if ( $parser->detect_task == true ){
             return $this->createTaskMsg();
         }
-        preg_match_all('#([-0-9 .,+/*=^a-z:)(]{2,})#is', $text, $founds);
 
-        $end = false;
         try {
             if ($parser->count_expressions==0) {
                 return $this->createEmptyMsg();
 
             }elseif ($parser->count_expressions==1) {
-                if ($this->detectSimpleExpression($parser->expressions[0])) {
-                  //  var_dump('detect simple expr');
-                    $end = $this->createSimpleMath($parser->expressions[0]);
-                } else {
-                    //var_dump('detect eq expr');
-                    $end = $this->createEqMath($parser->expressions[0], $parser->variables);
+                $type = \DetectTypeExpression::detectType($parser->expressions[0]);
+                if ( false===$type ){
+                    return $this->createEmptyMsg();
+                }elseif( $type=='elementary' ){
+                    // $math = new \Math($parser->expressions[0]);
+                    //$math->solve();
+                    return  $this->createSimpleMath($parser->expressions[0]);
+                }else{
+                    return $this->createEqMath($parser->expressions[0], $parser->variables);
                 }
             }elseif($parser->count_expressions>1){
-                $end = $this->createEqSystemMath($parser->expressions);
+                //foreach( $parser->expressions as $expression ){
+                 //   $type = \DetectTypeExpression::detectType($expression);
+                    //if ( )
+                //}
+                return $this->createEqSystemMath($parser->expressions);
             }
         } catch (\Exception $e) {
             var_dump($e->getMessage());
@@ -89,12 +94,8 @@ class Answer
             }
         }
 
+        return $this->createFailMsg();
 
-        if (false === $end) {
-            return $this->createFailMsg();
-        }
-        //var_dump($result);
-        return $end;
 
     }
 
@@ -171,72 +172,6 @@ class Answer
         return $msgs[rand(0,2)].'. Составить запрос правильно поможет хелп - https://vk.cc/6oV2be';
     }
 
-    private function normalize($expression)
-    {
-        //preg_match('#[-+/*=^]|sqrt|abs#is', $expression, $found1);
-        //$value = trim($expression);
-
-        $expression = preg_replace('#=$#', '', $expression);
-        $expression = str_replace(',', '.', $expression);
-
-        // $value = str_replace('•','×',$value);
-        $expression = preg_replace('#([0-9.]{1,})([a-z]{1,2})#i', '\1*\2', $expression);
-        $expression = preg_replace('#([0-9.a-z]{1,})\(#i', '\1*(', $expression);
-        $expression = preg_replace('#\)([0-9.a-z]{1,})#i', ')*\1', $expression);
-
-
-        if ( preg_match_all('#([a-z]{2,})#i',$expression, $found) ){
-            foreach($found[0] as $f ){
-                if ($f=='sqrt' || $f=='abs' ){
-                    continue;
-                }
-                $replace = [];
-                for($i=0;$i<strlen($f);$i++){
-                    array_push($replace, $f[$i]);
-                }
-                $expression = str_replace($f, implode('*',$replace), $expression);
-            }
-        }
-
-        $expression = str_replace('sqrt*(', 'sqrt(', $expression);
-        $expression = str_replace('abs*(', 'abs(', $expression);
-        return $expression;
-    }
-
-    /**
-     * Проверяем, относится ли выраженеи к простейшим
-     */
-    private function detectSimpleExpression($expression)
-    {
-        $expression = str_replace('sqrt', '', $expression);
-        $expression = str_replace('abs', '', $expression);
-        //var_dump($expression);
-        if (preg_match('#=.*#is', $expression)) {
-            return false;
-        };
-        if (preg_match('#[a-z]{1,2}#is', $expression)) {
-            return false;
-        };
-        return true;
-    }
-
-    private function parseVariables($variables)
-    {
-        $result = [];
-        $variables = preg_replace('#\s#', '', $variables);
-
-        preg_match_all('#([a-z]{1,3})=([^;\]]*)#i', $variables, $found);
-
-        $i = 0;
-        foreach ($found[1] as $var) {
-            $result[$var] = $found[2][$i];
-            $i++;
-        }
-        if (sizeof($result) == 0) {
-            return null;
-        }
-        return $result;
-    }
 
     private function createEqSystemMath($expressions){
         $run = implode(',',$expressions);
@@ -331,13 +266,6 @@ class Answer
 
     }
 
-    private function removeText($text)
-    {
-        $text = preg_replace('# +#', '', $text);
-        $text = preg_replace('#[а-я.,:!]{2,}#i', '', $text);
-        $text = preg_replace('#^[a-zа-я]([0-9])#i', '\1', $text);
-        return $text;
-    }
 
 
     static function createByText($text)

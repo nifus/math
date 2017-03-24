@@ -12,6 +12,8 @@ class DetectTypeExpression{
             return 'elementary';
         }elseif ( self::isLinearEquation($exp) ){
             return 'linear_equation';
+        }elseif ( self::isQuadraticEquation($exp) ){
+            return 'quadratic_equation';
         }
         return false;
 
@@ -42,5 +44,12 @@ class DetectTypeExpression{
             return false;
         }
         return true;
+    }
+
+    static function isQuadraticEquation($exp){
+        if ( preg_match('#sqrt|^#',$exp) ){
+            return true;
+        }
+        return false;
     }
 }

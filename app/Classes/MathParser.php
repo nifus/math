@@ -37,7 +37,7 @@ class MathParser
         $this->message($this->normalize_request , 'после удаления переенных ');
 
         $this->expressions = self::findExpressions($this->normalize_request);
-        $this->message($this->normalize_request, 'найденные выражения');
+        $this->message($this->expressions, 'найденные выражения');
 
         $this->count_expressions = sizeof($this->expressions);
 
@@ -76,8 +76,6 @@ class MathParser
         }
         $this->variables = $result;
         return $text;
-
-
     }
 
     static function findExpressions($text){
@@ -89,7 +87,12 @@ class MathParser
         foreach( $founds[0] as $expr ){
             $expr = self::normalize($expr);
             if ( false!==$expr ){
-                array_push($result, $expr);
+                $type = \DetectTypeExpression::detectType($expr);
+
+                if ( $type!=false ){
+                    array_push($result, $expr);
+                }
+
             }
         }
         return $result;
@@ -98,6 +101,7 @@ class MathParser
     static function normalize($expression){
         $expression = preg_replace('#=$#', '', $expression);
         $expression = str_replace(',', '.', $expression);
+
 
         // $value = str_replace('•','×',$value);
         $expression = preg_replace('#([0-9.]{1,})([a-z]{1,2})#i', '\1*\2', $expression);
@@ -124,12 +128,12 @@ class MathParser
     }
     static function detectUtf($text)
     {
-        return preg_match('#[√²]#i', $text);
+        return preg_match('#[√²]#iu', $text);
     }
 
     static function detectCyrillic($text)
     {
-        return preg_match('#[а-я]#i', $text);
+        return preg_match('#[а-я]#iu', $text);
     }
 
     static function detectTask($value){
@@ -148,8 +152,13 @@ class MathParser
             '/=$/'=>'',
             '/,/'=>'.',
             '/ +/'=>'',
-            '/[а-я.,:!]{2,}/u'=>'',
-            '/^[a-zа-я]([0-9])/u'=>'\1',
+            '/[а-я.,:!]{2,}/ui'=>'',
+            '/^[a-zа-я]([0-9])/ui'=>'\1',
+            '/²/u'=>'^2',
+            '/х/u'=>'x',
+            '/у/u'=>'y',
+            '/а/u'=>'a',
+            '/с/u'=>'c',
         ];
         //$text = mb_str_replace('×', '*', $text);
         //$text = str_replace(':', '/', $text);
