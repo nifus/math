@@ -54,6 +54,9 @@ class Answer
             return $this->createAttachmentMsg();
         }
         $parser =  new \MathParser($text, $this->debug);
+        if ( $parser->detect_long_numbers == true ){
+            return $this->createLongMsg();
+        }
         if ( $parser->detect_cyrillic == true ){
             return $this->createCyrillicMsg();
         }
@@ -154,6 +157,11 @@ class Answer
     private function createCyrillicMsg()
     {
         return 'В запросе найдена кириллица. Возможно Вам поможет хелп, как заставить бота решать ваши задачи - https://vk.cc/6oV2be';
+    }
+
+    private function createLongMsg()
+    {
+        return 'Начальник сказал, что Ваш запрос слишком глуп, чтобы его выполнять';
     }
     private function createStupidMsg()
     {

@@ -3,6 +3,7 @@
 class MathParser
 {
 
+    public $detect_long_numbers;
     public $detect_cyrillic;
     public $detect_utf;
     public $detect_task;
@@ -26,6 +27,7 @@ class MathParser
         $this->normalize_request = self::clearRequest($value);
         $this->detect_cyrillic = self::detectCyrillic($this->normalize_request);
         $this->detect_utf = self::detectUtf($this->normalize_request);
+        $this->detect_long_numbers = self::detectLongNumbers($this->normalize_request);
 
         $this->message($this->normalize_request ,' после очистки запроса ');
         $this->message($this->detect_cyrillic ,' кирилица ');
@@ -134,6 +136,10 @@ class MathParser
     static function detectCyrillic($text)
     {
         return preg_match('#[а-я]#iu', $text);
+    }
+
+    static function detectLongNumbers($text){
+        return preg_match('#([0-9.]{9,})#iu', $text);
     }
 
     static function detectTask($value){
