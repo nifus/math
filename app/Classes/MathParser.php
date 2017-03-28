@@ -146,6 +146,8 @@ class MathParser
     static function clearRequest($text)
     {
         $patterns = [
+            '/\\\/'=>'/',
+            '/•/u'=>'*',
             '/×/'=>'*',
             '/:/'=>'/',
             '/÷/'=>'/',
