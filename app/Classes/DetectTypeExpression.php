@@ -25,6 +25,7 @@ class DetectTypeExpression{
      * @return bool
      */
     static function isElementaryExpression($exp){
+        $exp = preg_replace('/abs|sqrt/i','',$exp);
         if ( preg_match('#[a-z]#',$exp) ){
             return false;
         }

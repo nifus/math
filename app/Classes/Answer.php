@@ -74,11 +74,13 @@ class Answer
 
             }elseif ($parser->count_expressions==1) {
                 $type = \DetectTypeExpression::detectType($parser->expressions[0]);
+                var_dump($type);
                 if ( false===$type ){
                     return $this->createEmptyMsg();
                 }elseif( $type=='elementary' ){
                     // $math = new \Math($parser->expressions[0]);
                     //$math->solve();
+
                     return  $this->createSimpleMath($parser->expressions[0]);
                 }else{
                     return $this->createEqMath($parser->expressions[0], $parser->variables);
@@ -196,7 +198,7 @@ class Answer
 
     private function createEqMath($value, $variables)
     {
-
+        var_dump('createEqMath');
         $request = '';
         if (sizeof($variables) > 0) {
             foreach ($variables as $key => $v) {
@@ -239,7 +241,7 @@ class Answer
     private function createSimpleMath($value)
     {
         ob_start();
-        passthru('maxima -r \'printf(true,"~f",' . $value . ')$\'');
+        passthru('maxima -r \'printf(false,"~a",' . $value . ');\'');
         $result = ob_get_contents();
         ob_end_clean();
        // dd($result);
