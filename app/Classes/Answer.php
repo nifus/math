@@ -266,12 +266,11 @@ class Answer
             $found = preg_replace('#\s+#', '', $found[1]);
             // var_dump($found);
             return preg_replace('#.0$#', '', $found);
-        } elseif (preg_match('#\(%i1\)(.*)\(%i2\)#iUs', $value, $found)) {
+        } elseif (preg_match('#\(%o1\)(.*)\(%i2\)#iUs', $value, $found)) {
             $found = preg_replace('#\s+#', '', $found[1]);
             // var_dump($found);
             return preg_replace('#.0$#', '', $found);
         }
-
         return false;
 
     }
